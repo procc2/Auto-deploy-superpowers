@@ -1,7 +1,6 @@
 version: 2.1
 
 orbs: 
-  node: circleci/node@4.1
   slack: circleci/slack@4.12.5
   aws-cli: circleci/aws-cli@3.1.1
 
@@ -18,9 +17,9 @@ commands:
           when: on_fail
           command: |
             echo "Destroying environment: << parameters.Workflow_ID >> "
-            aws --region us-west-2 s3 rm s3://udapeople-<<parameters.Workflow_ID>> --recursive
-            aws --region us-west-2 cloudformation delete-stack --stack-name udapeople-backend-<< parameters.Workflow_ID >>
-            aws --region us-west-2 cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.Workflow_ID >>
+            aws --region us-east-2 s3 rm s3://udapeople-<<parameters.Workflow_ID>> --recursive
+            aws --region us-east-2 cloudformation delete-stack --stack-name udapeople-backend-<< parameters.Workflow_ID >>
+            aws --region us-east-2 cloudformation delete-stack --stack-name udapeople-frontend-<< parameters.Workflow_ID >>
 
   install_awscli:
     description: Install AWS CLI # https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
@@ -58,18 +57,6 @@ commands:
 
             
 jobs:
-  deploy:
-    executor:
-      name: node/default
-    steps:
-      - checkout
-      - node/install-packages
-      - run:
-          command: npm run deploy
-      - slack/notify:
-          channel: $SLACK_DEFAULT_CHANNEL
-          event: fail
-          template: basic_fail_1
   build-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -160,7 +147,7 @@ jobs:
             npm audit --audit-level=critical
       - slack/notify:
           channel: $SLACK_DEFAULT_CHANNEL
-          event: always
+          event: fail
           template: basic_fail_1
           
   scan-backend:
@@ -184,7 +171,7 @@ jobs:
             npm audit --audit-level=critical
       - slack/notify:
           channel: $SLACK_DEFAULT_CHANNEL
-          event: always
+          event: fail
           template: basic_fail_1
 
   deploy-infrastructure:
@@ -197,7 +184,7 @@ jobs:
       # - run: 
       #     name: set/override default region 
       #     command: | 
-      #         aws configure set default.region "us-west-2"
+      #         aws configure set default.region "us-east-2"
       #         echo $(aws configure list)
       - run:
           name: Install tar and zip utilities
@@ -206,7 +193,7 @@ jobs:
       - run:
           name: Ensure back-end infrastructure exists
           command: |
-            aws --region us-west-2 cloudformation deploy \
+            aws --region us-east-2 cloudformation deploy \
               --template-file .circleci/files/backend.yml \
               --tags project=udapeople \
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
@@ -214,7 +201,7 @@ jobs:
       - run:
           name: Ensure front-end infrastructure exist
           command: |
-            aws --region us-west-2 cloudformation deploy \
+            aws --region us-east-2 cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
               --tags project=udapeople \
               --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
@@ -222,7 +209,7 @@ jobs:
       - run:
           name: Add back-end ip to ansible inventory
           command: |
-            BACKEND_PUBLIC_IP=$(aws --region us-west-2 ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
+            BACKEND_PUBLIC_IP=$(aws --region us-east-2 ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
             echo $BACKEND_PUBLIC_IP >> .circleci/ansible/inventory.txt
             cat .circleci/ansible/inventory.txt
 
@@ -237,13 +224,13 @@ jobs:
     docker:
       # Docker image here that supports Ansible
       - image: python:3.7-alpine3.11
-#      - image: python:3.8-alpine3.15      
+    #  - image: python:3.8-alpine3.15      
     steps:
       # Checkout code from git
       - checkout       
       # Add ssh keys with fingerprint
       - add_ssh_keys:
-          fingerprints: ["8d:3e:53:3f:96:70:3d:53:80:e4:eb:08:23:19:9e:8f"]
+          fingerprints: ["c4:ec:2a:5a:99:41:e5:5b:c4:99:6b:53:e7:2a:9d:7b"]
       # attach workspace
       - attach_workspace:
           at: ~/
@@ -291,7 +278,7 @@ jobs:
           name: Run migrations
           command: |
             cd backend
-            npm install
+            npm install --no-save
             npm run migrations > migrations_dump.txt
       - run:
           name: Send migration status to kvdb.io
@@ -319,8 +306,7 @@ jobs:
           name: Install dependencies
           command: |
             yum install -y tar gzip curl
-            curl -sL https://rpm.nodesource.com/setup_10.x | bash -
-            yum install -y nodejs              
+            yum install --assumeyes nodejs             
 
       # - run:
       #     name: Install node
@@ -340,7 +326,7 @@ jobs:
           name: Get backend url
           command: |
             # your code here
-            export BACKEND_PUBLIC_IP=$(aws --region us-west-2 ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
+            export BACKEND_PUBLIC_IP=$(aws --region us-east-2 ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
             export API_URL="http://${BACKEND_PUBLIC_IP}:3030"
             echo "${API_URL}"
             echo API_URL="http://${BACKEND_PUBLIC_IP}:3030" >> frontend/.env
@@ -432,7 +418,7 @@ jobs:
       - run:
           name: Backend smoke test.
           command: |
-            export BACKEND_PUBLIC_IP=$(aws --region us-west-2 ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
+            export BACKEND_PUBLIC_IP=$(aws --region us-east-2 ec2 describe-instances --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
             export API_URL="http://${BACKEND_PUBLIC_IP}:3030"
             echo "${API_URL}"  #   curl -s ${API_URL}/api/status -v 
             if curl -s ${API_URL}/api/status | grep "ok"
@@ -445,7 +431,7 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
-            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-west-2.amazonaws.com/#/employees"            
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-2.amazonaws.com/#/employees"            
             echo ${URL} 
             if curl -s ${URL} | grep "Welcome"
             then
@@ -469,7 +455,7 @@ jobs:
       - run:
           name: Save Old Workflow ID to kvdb.io
           command: |
-            export OldWorkflowID=$(aws --region us-west-2 cloudformation list-exports --query "Exports[?Name==\`WorkflowID\`].Value" --no-paginate --output text)
+            export OldWorkflowID=$(aws --region us-east-2 cloudformation list-exports --query "Exports[?Name==\`WorkflowID\`].Value" --no-paginate --output text)
             echo "Old Wokflow ID: $OldWorkflowID"
             curl https://kvdb.io/${KVDB_BUCKET_ID}/old_workflow_id -d "${OldWorkflowID}"
       - run:
@@ -479,7 +465,7 @@ jobs:
                     --template-file .circleci/files/cloudfront.yml \
                     --stack-name InitialStack \
                     --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
-                    --region us-west-2 \
+                    --region us-east-2 \
                     --tags project=udapeople
             
       - revert-migrations
@@ -494,15 +480,15 @@ jobs:
           name: Get old stack workflow id and Cleanup
           command: |           
             export OldWorkflowID=$(curl --insecure https://kvdb.io/${KVDB_BUCKET_ID}/old_workflow_id)
-            export STACKS=($(aws --region us-west-2 cloudformation list-stacks --query "StackSummaries[*].StackName" --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
+            export STACKS=($(aws --region us-east-2 cloudformation list-stacks --query "StackSummaries[*].StackName" --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
             echo OldWorkflowID: "${OldWorkflowID}"
             echo CIRCLE_WORKFLOW_ID "$CIRCLE_WORKFLOW_ID"
             echo Stack names: "${STACKS[@]}"
             if [[ ${STACKS[@]} =~ "${OldWorkflowID}" ]]
             then
-              aws --region us-west-2 s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
-              aws --region us-west-2 cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
-              aws --region us-west-2 cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
+              aws --region us-east-2 s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
+              aws --region us-east-2 cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
+              aws --region us-east-2 cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
               echo "=======================Delete Confirmed========================"
             else
               echo "=======================Didn't delete========================"            
@@ -512,7 +498,6 @@ jobs:
 workflows:
   default:
     jobs:
-      - deploy
       - build-frontend
       - build-backend
       - test-frontend:
@@ -525,9 +510,6 @@ workflows:
           requires: [build-frontend]
       - deploy-infrastructure:
           requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-          filters:
-            branches:
-              only: [master]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
       - run-migrations:
