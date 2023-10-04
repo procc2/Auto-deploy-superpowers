@@ -230,7 +230,7 @@ jobs:
       - checkout       
       # Add ssh keys with fingerprint
       - add_ssh_keys:
-          fingerprints: ["c4:ec:2a:5a:99:41:e5:5b:c4:99:6b:53:e7:2a:9d:7b"]
+          fingerprints: ["32:fd:68:8a:9d:bb:35:88:90:bd:39:cc:ef:19:21:84:01:3c:9d:1f"]
       # attach workspace
       - attach_workspace:
           at: ~/
@@ -306,7 +306,6 @@ jobs:
           name: Install dependencies
           command: |
             yum install -y tar gzip curl
-            yum install --assumeyes nodejs             
 
       # - run:
       #     name: Install node
@@ -314,7 +313,8 @@ jobs:
       #       curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
       #       export NVM_DIR="$HOME/.nvm"
       #       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-      #       nvm install 16
+      #       nvm install v13.8.0
+      #       npm --version
 
       # - run:
       #     name: Install ansible and awscli
@@ -342,6 +342,10 @@ jobs:
           command: |
             # your code here
             cd frontend
+            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm install v13.8.0
             npm install
             npm run build
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
@@ -359,11 +363,18 @@ jobs:
       - checkout       
       # Add ssh keys with fingerprint
       - add_ssh_keys:
-          fingerprints: ["8d:3e:53:3f:96:70:3d:53:80:e4:eb:08:23:19:9e:8f"]
+          fingerprints: ["32:fd:68:8a:9d:bb:35:88:90:bd:39:cc:ef:19:21:84:01:3c:9d:1f"]
       # attach workspace
       - attach_workspace:
           at: ~/
 
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt update
+            sudo apt install nodejs
+            sudo apt install npm 
+            sudo npm install pm2 -g
       - run:
           name: Install aws dependencies
           command: |
@@ -382,6 +393,7 @@ jobs:
           name: Deploy backend
           command: |
             # your code here
+            sudo apt install npm 
             cd backend # echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
             npm i
             npm run build
