@@ -68,7 +68,7 @@ jobs:
           name: Build front-end
           command: |
             cd frontend
-            npm install
+            npm install --no-save
             npm run build
       - save_cache:
           paths: [frontend/node_modules]
@@ -85,7 +85,7 @@ jobs:
           name: Back-end build
           command: |
             cd backend
-            npm install
+            npm install --no-save
             npm run build
       - save_cache:
           paths: [backend/node_modules]
@@ -106,7 +106,7 @@ jobs:
           name: Test front-end
           command: |
             cd frontend
-            npm i
+            npm i --no-save
             npm run test
                 
   test-backend:
@@ -142,7 +142,7 @@ jobs:
           name: Scan front-end
           command: |
             cd frontend
-            npm install
+            npm install --no-save
             npm audit fix --audit-level=critical --force
             npm audit --audit-level=critical
       - slack/notify:
@@ -265,7 +265,7 @@ jobs:
             echo "CONTENT OF backend/.env"      
             cat backend/.env         
             cd .circleci/ansible
-            echo "ansible-playbook -i+ "+ inventory.txt + "configure-server.yml -v"
+            echo "ansible-playbook -i+ "+ cat inventory.txt + "configure-server.yml -v"
             ansible-playbook -i inventory.txt configure-server.yml -v 
       - destroy-environment
 
@@ -348,7 +348,7 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm install v13.8.0
-            npm install
+            npm install --no-save
             npm run build
             tar -czvf artifact-"${CIRCLE_WORKFLOW_ID:0:7}".tar.gz dist
             aws s3 cp dist s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
@@ -398,7 +398,7 @@ jobs:
             # your code here
             sudo apt install npm 
             cd backend # echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
-            npm i
+            npm i --no-save
             npm run build
             cd ..
             # Zip the directory
